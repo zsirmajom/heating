@@ -1,0 +1,19 @@
+{
+    "commonRelayPin": 0,
+    "areas": [
+        {
+            "name": "Area 1", 
+            "daytime": 21.5, 
+            "night": 20.0,
+            "relayPin": 1,
+            "sensorUrl": "area1.sensor"
+        }
+    ],
+    "pushover": [
+        {
+            "name": "My phone",
+            "key": "<key>",
+            "token": "<token>"
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+{
+    "name": "Heating",
+    "version": "0.0.1",
+    "dependencies": {
+	"async": "2.0.1",
+        "q": "1.4.1",
+        "wiring-pi": "2.1.1",
+        "pushover-notifications": "*"
+    }
+}
