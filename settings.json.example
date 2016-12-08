@@ -5,7 +5,7 @@
             "name": "Area 1", 
             "daytime": 21.5, 
             "night": 20.0,
-            "relayPin": 1,
+            "relayPins": [1],
             "sensorUrl": "area1.sensor"
         }
     ],

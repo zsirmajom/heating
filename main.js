@@ -11,7 +11,7 @@ config.areas.forEach(Thermostat.registerArea, Thermostat);
 async.forever(function (next) {
     Thermostat.updateState();
     
-    // call again in 60 seconds
+    // call again in 10 seconds
     setTimeout(next, 10000);
 }, function (error) {
     console.log(error);

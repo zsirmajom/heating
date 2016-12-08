@@ -16,8 +16,11 @@ function HeatingZone(config) {
     this.error = false;
     this.boost = false;
     this.boostTimout = null;
-    wpi.pinMode(self._config.relayPin, wpi.OUTPUT);
-    wpi.digitalWrite(self._config.relayPin, wpi.HIGH);
+    
+    self._config.relayPins.forEach(function(pin) {
+        wpi.pinMode(pin, wpi.OUTPUT);
+        wpi.digitalWrite(pin, wpi.HIGH);
+    });
 };
 
 HeatingZone.THRESHOLD = 0.3;
@@ -54,7 +57,7 @@ HeatingZone.prototype.heatingOn = function() {
     var self = this,
         message = "";;
 
-    wpi.digitalWrite(self._config.relayPin, wpi.LOW);
+    self.setPinsOn();
     self.active = true;
 
     message = (self.boost
@@ -68,7 +71,7 @@ HeatingZone.prototype.heatingOn = function() {
 HeatingZone.prototype.heatingOff = function() {
     var self = this;
 
-    wpi.digitalWrite(self._config.relayPin, wpi.HIGH);
+    self.setPinsOff();
     self.active = false;
     notification.send("Status", "Heating OFF, sensor value: " + self.sensorValue.toString());
 };
@@ -97,4 +100,16 @@ HeatingZone.prototype.clearBoost = function() {
  
     clearTimeout(self.boostTimeout);
     self.boost = false;
+};
+
+Heatingzone.prototype.setPinsOn = function() {
+    self._config.relayPins.forEach(function(pin) {
+        wpi.digitalWrite(pin, wpi.LOW);
+    });
+};
+
+Heatingzone.prototype.setPinsOff = function() {
+    self._config.relayPins.forEach(function(pin) {
+        wpi.digitalWrite(pin, wpi.HIGH);
+    });
 };
