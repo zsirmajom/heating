@@ -30,13 +30,18 @@ exports.HeatingZone = HeatingZone;
 HeatingZone.prototype.updateState = function() {
     var self = this;
     self.sensor.getValue().then(function(sensorValue) {
-        console.log("SensorValue: ", sensorValue);
+        console.log(self._config.name, "sensor value: ", sensorValue);
         self.adjustOutputs(sensorValue);
-        self.error = false;
+
+	if (self.error) {
+            notification.send(self._config.name, "Temperature sensor restored.");
+            self.error = false;
+        }
     }, function(error) {
         if (!self.error) {
             self.error = true;
             notification.send("Error", "Temperature sensor if offline. (" + self._config.name + ")");
+            self.heatingOff();
         }
         console.log('ERROR', error);
     });
@@ -55,7 +60,7 @@ HeatingZone.prototype.adjustOutputs = function(sensorValue) {
 
 HeatingZone.prototype.heatingOn = function() {
     var self = this,
-        message = "";;
+        message = "";
 
     self.setPinsOn();
     self.active = true;
@@ -64,8 +69,8 @@ HeatingZone.prototype.heatingOn = function() {
         ? "Boost Heating"
         : "Heating ON"
     );
-
-    notification.send("Status", message + ", sensor value: " + self.sensorValue.toString());
+    console.log("Heating ON");
+    notification.send(self._config.name, message + ", sensor value: " + self.sensorValue.toString());
 };
 
 HeatingZone.prototype.heatingOff = function() {
@@ -73,18 +78,20 @@ HeatingZone.prototype.heatingOff = function() {
 
     self.setPinsOff();
     self.active = false;
-    notification.send("Status", "Heating OFF, sensor value: " + self.sensorValue.toString());
+    console.log("Heating OFF");
+    notification.send(self._config.name, "Heating OFF, sensor value: " + self.sensorValue.toString());
 };
 
 
 HeatingZone.prototype.getDesiredTemperature = function() {
     var self = this;
     var hours = new Date().getHours();
-
-    return (7 < hours && hours < 22
-        ? self._config.daytime
+    var temp = (7 < hours && hours < 22
+        ? self._config.daylight
         : self._config.night
     );
+
+    return temp;
 };
 
 HeatingZone.prototype.boost = function() {
@@ -102,13 +109,17 @@ HeatingZone.prototype.clearBoost = function() {
     self.boost = false;
 };
 
-Heatingzone.prototype.setPinsOn = function() {
+HeatingZone.prototype.setPinsOn = function() {
+    var self = this;
+
     self._config.relayPins.forEach(function(pin) {
         wpi.digitalWrite(pin, wpi.LOW);
     });
 };
 
-Heatingzone.prototype.setPinsOff = function() {
+HeatingZone.prototype.setPinsOff = function() {
+    var self = this;
+
     self._config.relayPins.forEach(function(pin) {
         wpi.digitalWrite(pin, wpi.HIGH);
     });

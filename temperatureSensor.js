@@ -34,7 +34,7 @@ TemperatureSensor.prototype.getValue = function() {
         });
 
         response.on('end', function() {
-            deferred.resolve(self.handlePrell(parseInt(str) / 10));
+            deferred.resolve(parseFloat(str));
         });
     }
 
