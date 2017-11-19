@@ -1,6 +1,6 @@
 {
     "name": "Heating",
-    "version": "0.0.1",
+    "version": "0.1.2",
     "dependencies": {
 	"async": "2.0.1",
         "q": "1.4.1",

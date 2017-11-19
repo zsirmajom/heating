@@ -6,7 +6,22 @@
             "daytime": 21.5, 
             "night": 20.0,
             "relayPins": [1],
-            "sensorUrl": "area1.sensor"
+            "dataSource": {
+                type: "ThingSpeak",
+                readKey: "<key>",
+                channel: <channel>,
+                fieldId: "field1"
+            }
+        },
+        {
+            "name": "Area 1", 
+            "daytime": 22.5, 
+            "night": 21.0,
+            "relayPins": [2, 3],
+            "dataSource": {
+                type: "sensor",
+                url: "<url>",
+            }
         }
     ],
     "pushover": [

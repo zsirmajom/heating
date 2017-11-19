@@ -1,18 +1,17 @@
-"use strict";
+import { fs } from 'fs';
+import { async } from 'async';
+import { Thermostat } from './thermostat'
 
-var fs = require('fs');
-var config = JSON.parse(fs.readFileSync('settings.json', 'utf8'));
-var async = require('async');
-var ts = require("./thermostat.js");
-var Thermostat = new ts.Thermostat();
+const REPEAT_INTERVAL = 60000,
+    config = JSON.parse(fs.readFileSync('settings.json', 'utf8')),
+    Thermostat = new Thermostat();
 
 config.areas.forEach(Thermostat.registerArea, Thermostat);
 
-async.forever(function (next) {
+async.forever(next => {
     Thermostat.updateState();
     
-    // call again in 60 seconds
-    setTimeout(next, 60000);
-}, function (error) {
-    console.log(error);
+    setTimeout(next, REPEAT_INTERVAL);
+}, error => { 
+    console.log(error); 
 });

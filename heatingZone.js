@@ -1,126 +1,112 @@
 "use strict";
 
-var wpi = require("wiring-pi");
-var temp = require("./temperatureSensor");
-var notification = require("./notification.js");
+import { wiringPi as wpi } from 'wiring-pi';
+import { q } from 'q';
+import { TemperatureSensor } from './temperatureSensor';
+import { ThingSpeakClient } from './thingSpeakClient';
+import { notification } from './notification';
 
 wpi.setup('wpi');
 
-function HeatingZone(config) {
-    var self = this;
-    self._config = config;
-    self.sensorValue = null;
-    
-    this.sensor = new temp.TemperatureSensor(config.sensorUrl);
-    this.active = false;
-    this.error = false;
-    this.boost = false;
-    this.boostTimout = null;
-    
-    self._config.relayPins.forEach(function(pin) {
-        wpi.pinMode(pin, wpi.OUTPUT);
-        wpi.digitalWrite(pin, wpi.HIGH);
-    });
-};
+export class HeatingZone {
+    static THRESHOLD = 0.3;
+    static DAYLIGHT_START_HOUR = 7;
+    static DAYLIGHT_END_HOUR = 22;
 
-HeatingZone.THRESHOLD = 0.3;
+    constructor(config) { 
+        const self = this;
 
-exports.HeatingZone = HeatingZone;
+        self._config = config; 
+        self.dataSource = null;
+        self.sensorValue = null;
+        self.active = false;
+        self.error = false;
 
-HeatingZone.prototype.updateState = function() {
-    var self = this;
-    self.sensor.getValue().then(function(sensorValue) {
-        console.log(self._config.name, "sensor value: ", sensorValue);
-        self.adjustOutputs(sensorValue);
-
-	if (self.error) {
-            notification.send(self._config.name, "Temperature sensor restored.");
-            self.error = false;
-        }
-    }, function(error) {
-        if (!self.error) {
-            self.error = true;
-            notification.send("Error", "Temperature sensor if offline. (" + self._config.name + ")");
-            self.heatingOff();
-        }
-        console.log('ERROR', error);
-    });
-};
-
-HeatingZone.prototype.adjustOutputs = function(sensorValue) {
-    var self = this;
-    self.sensorValue = sensorValue;
-    
-    if (self.active && !self.boost && self.getDesiredTemperature() + HeatingZone.THRESHOLD < sensorValue) {
-	self.heatingOff();
-    } else if (!self.active && (self.boost || sensorValue < self.getDesiredTemperature() - HeatingZone.THRESHOLD)) {
-	self.heatingOn();
+        self.initDataSource();
+        self.initRelayPins();
     }
-};
 
-HeatingZone.prototype.heatingOn = function() {
-    var self = this,
-        message = "";
+    initDataSource() {
+        const self = this;
+        self.dataSource = new TemperatureSensor(self._config.sensorUrl);
+    }
 
-    self.setPinsOn();
-    self.active = true;
+    initRelayPins() {
+        const self = this;
 
-    message = (self.boost
-        ? "Boost Heating"
-        : "Heating ON"
-    );
-    console.log("Heating ON");
-    notification.send(self._config.name, message + ", sensor value: " + self.sensorValue.toString());
-};
+        self._config.relayPins.forEach(pin => {
+            wpi.pinMode(pin, wpi.OUTPUT);
+            wpi.digitalWrite(pin, wpi.HIGH);
+        });
+    }
+    
+    updateState() {
+        const self = this;
 
-HeatingZone.prototype.heatingOff = function() {
-    var self = this;
+        self.source.getValue().then(sensorValue => {
+            console.log(self._config.name, "sensor value: ", sensorValue);
+            self.adjustOutputs(sensorValue);
+    
+            if (self.error) {
+                notification.send(self._config.name, "Temperature sensor restored.");
+                self.error = false;
+            }
+        }, error => {
+            if (!self.error) {
+                self.error = true;
+                notification.send(self._config.name, "ERROR: Temperature sensor if offline.");
+                self.heatingOff();
+            }
+            console.log('ERROR', error);
+        });
+    }
+    
+    setPinsOn() {
+        this._config.relayPins.forEach(pin => { wpi.digitalWrite(pin, wpi.LOW); });
+    }
+    
+    setPinsOff() {
+        this._config.relayPins.forEach(pin => { wpi.digitalWrite(pin, wpi.HIGH); });
+    }
 
-    self.setPinsOff();
-    self.active = false;
-    console.log("Heating OFF");
-    notification.send(self._config.name, "Heating OFF, sensor value: " + self.sensorValue.toString());
-};
+    adjustOutputs(sensorValue) {
+        const self = this;
+        self.sensorValue = sensorValue;
+        
+        if (self.active && !self.boost && self.getDesiredTemperature() + HeatingZone.THRESHOLD < sensorValue) {
+            self.heatingOff();
+        } else if (!self.active && (self.boost || sensorValue < self.getDesiredTemperature() - HeatingZone.THRESHOLD)) {
+            self.heatingOn();
+        }
+    };
+    
+    heatingOn() {
+        const self = this;
+    
+        self.setPinsOn();
+        self.active = true;
 
-
-HeatingZone.prototype.getDesiredTemperature = function() {
-    var self = this;
-    var hours = new Date().getHours();
-    var temp = (7 < hours && hours < 22
-        ? self._config.daylight
-        : self._config.night
-    );
-
-    return temp;
-};
-
-HeatingZone.prototype.boost = function() {
-    var self = this;
-
-    self.clearBoost();
-
-    self.boostTimeout(clearBoost, 3600);
-};
-
-HeatingZone.prototype.clearBoost = function() {
-    var self = this;
- 
-    clearTimeout(self.boostTimeout);
-    self.boost = false;
-};
-
-HeatingZone.prototype.setPinsOn = function() {
-    var self = this;
-
-    self._config.relayPins.forEach(function(pin) {
-        wpi.digitalWrite(pin, wpi.LOW);
-    });
-};
-
-HeatingZone.prototype.setPinsOff = function() {
-    var self = this;
-
-    self._config.relayPins.forEach(function(pin) {
-        wpi.digitalWrite(pin, wpi.HIGH);
-    });
-};
+        console.log(self._config.name, "Heating ON");
+        notification.send(self._config.name, message + "Heating ON, sensor value: " + self.sensorValue.toString());
+    };
+    
+    heatingOff() {
+        const self = this;
+    
+        self.setPinsOff();
+        self.active = false;
+        console.log(self._config.name, "Heating OFF");
+        notification.send(self._config.name, "Heating OFF, sensor value: " + self.sensorValue.toString());
+    };
+    
+    
+    getDesiredTemperature() {
+        const self = this;
+        const hours = new Date().getHours();
+        
+        return (HeatingZone.DAYLIGHT_START_HOUR < hours && hours < HeatingZone.DAYLIGHT_END_HOUR
+            ? self._config.daylight
+            : self._config.night
+        );
+    };
+}

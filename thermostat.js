@@ -1,21 +1,23 @@
-"use strict";
+import { HeatingZone } from './heatingZone'
 
-var hz = require("./heatingZone");
+export class Thermostat {
+    constructor() {
+        const self = this;
 
-function Thermostat() {
-    this.zones = [];
-};
+        self.zones = [];
+    }
 
-exports.Thermostat = Thermostat;
+    registerArea(config) {
+        const self = this;
 
-Thermostat.prototype.registerArea = function(config) {
-    this.zones.push(new hz.HeatingZone(config));
-}
-
-Thermostat.prototype.updateState = function() {
-    var self = this;
+        self.zones.push(new hz.HeatingZone(config));
+    }
     
-    self.zones.forEach(function (zone) {
-        zone.updateState();
-    });
-}
+    updateState() {
+        const self = this;
+        
+        self.zones.forEach(zone => {
+            zone.updateState();
+        });
+    }
+};

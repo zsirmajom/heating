@@ -1,22 +1,20 @@
-"use strict";
+import { fs } from 'fs';
+import { push } from 'pushover-notifications';
 
-var fs = require('fs');
-var config = JSON.parse(fs.readFileSync('notificationSettings.json', 'utf8'));
-var push = require('pushover-notifications');
+const notificationConfig = JSON.parse(fs.readFileSync('notificationSettings.json', 'utf8'));
 
-exports.send = function(title, message) {
-    var p = new push({
-        user: config.user,
-        token: config.token,
-    });
-
-    var msg = {
+export function send(title, message) {
+    const p = new push({
+        user: notificationConfig.user,
+        token: notificationConfig.token,
+    }),
+    msg = {
         message: message,
         title: title,
-	priority: 1
+	    priority: 1
     }
 
-    p.send(msg, function(error, result) {
+    p.send(msg, (error, result) => {
         if (error) {
             throw error;
         }
