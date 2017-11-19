@@ -5,6 +5,7 @@ import { q } from 'q';
 import { TemperatureSensor } from './temperatureSensor';
 import { ThingSpeakClient } from './thingSpeakClient';
 import { notification } from './notification';
+import { SIGBREAK } from 'constants';
 
 wpi.setup('wpi');
 
@@ -28,7 +29,20 @@ export class HeatingZone {
 
     initDataSource() {
         const self = this;
-        self.dataSource = new TemperatureSensor(self._config.sensorUrl);
+
+        switch (self._config.dataSource.type) {
+            case "sensor":
+                self.dataSource = new TemperatureSensor(self._config.dataSource.url);
+                break;
+
+            case "ThingSpeak":
+                self.dataSource = new ThingSpeakClient(self._config.dataSource);
+                break;
+
+            default:
+                throw new Error("Invalid data source.");
+                break;
+        }
     }
 
     initRelayPins() {
